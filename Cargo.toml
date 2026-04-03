@@ -18,8 +18,9 @@ serde_json       = "1"
 # Timestamps
 chrono           = "0.4"
 # CLI + env-var config
-clap             = { version = "4", features = ["derive"] }
-# Coloured terminal output (auto-disabled when stdout is not a TTY)
+# تفعيل "env" يحل مشكلة اللون الأحمر في الصورة الأخيرة
+clap             = { version = "4", features = ["derive", "env"] }
+# Coloured terminal output
 colored          = "2"
 # Error handling
 anyhow           = "1"
@@ -28,8 +29,8 @@ tracing          = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
 [profile.release]
-opt-level       = 3
-lto             = true
-codegen-units   = 1
+opt-level       = 2
+lto             = false   # ضروري جداً لنجاح البناء في Railway
+codegen-units   = 16      # يقلل الضغط على الرام أثناء البناء
 panic           = "abort"
 strip           = true
