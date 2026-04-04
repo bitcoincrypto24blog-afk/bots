@@ -4,6 +4,7 @@
 //!   • Binance     wss://stream.binance.com:9443
 //!   • Coinbase    wss://advanced-trade-ws.coinbase.com
 //!   • Polymarket  wss://ws-subscriptions-clob.polymarket.com
+//!   • Mexico      wss://wbs.mexc.com
 //!
 //! Metrics per exchange (rolling window):
 //!   min · avg · max · p50 · p95 · p99 · jitter (std-dev) · packet loss %
@@ -40,7 +41,7 @@ use tracing::{error, info, warn};
 #[command(
     name    = "ws-latency-monitor",
     version = "1.0.0",
-    about   = "Real-time WebSocket latency monitor — Binance · Coinbase · Polymarket"
+    about   = "Real-time WebSocket latency monitor — Binance · Coinbase · Polymarket · Mexico"
 )]
 struct Config {
     /// WebSocket ping interval in milliseconds
@@ -95,6 +96,13 @@ fn exchange_list() -> Vec<Exchange> {
             name: "Polymarket",
             url:  "wss://ws-subscriptions-clob.polymarket.com/ws/",
             subscribe_msg: Some(r#"{"assets_ids":[],"type":"market"}"#),
+        },
+        Exchange {
+            name: "Mexico",
+            url:  "wss://wbs.mexc.com/ws",
+            subscribe_msg: Some(
+                r#"{"method":"SUBSCRIPTION","params":["spot@public.deals.v3.api@BTCUSDT"]}"#,
+            ),
         },
     ]
 }
@@ -329,7 +337,7 @@ async fn aggregator(
     report_interval: Duration,
     window:          usize,
 ) {
-    const NAMES: [&str; 3] = ["Binance", "Coinbase", "Polymarket"];
+    const NAMES: [&str; 4] = ["Binance", "Coinbase", "Polymarket", "Mexico"];
 
     let mut metrics: HashMap<&str, Metrics> = NAMES
         .iter()
@@ -406,6 +414,7 @@ fn color_name(name: &str) -> String {
         "Binance"    => format!("{:>11}", name).yellow().bold().to_string(),
         "Coinbase"   => format!("{:>11}", name).blue().bold().to_string(),
         "Polymarket" => format!("{:>11}", name).magenta().bold().to_string(),
+        "Mexico"     => format!("{:>11}", name).cyan().bold().to_string(),
         _            => format!("{:>11}", name).white().bold().to_string(),
     }
 }
@@ -435,7 +444,7 @@ fn print_report(metrics: &HashMap<&str, Metrics>) {
     );
     println!("{}", div.cyan());
 
-    for name in &["Binance", "Coinbase", "Polymarket"] {
+    for name in &["Binance", "Coinbase", "Polymarket", "Mexico"] {
         let Some(m) = metrics.get(name) else { continue };
 
         let status = if m.connected {
@@ -498,17 +507,17 @@ async fn main() -> Result<()> {
 
     println!(
         "{}",
-        "╔══════════════════════════════════════════════════════════╗".cyan()
+        "╔══════════════════════════════════════════════════════════════════╗".cyan()
     );
     println!(
         "{}",
-        "║  🚀  ws-latency-monitor  ·  Binance · Coinbase · Poly   ║"
+        "║  🚀  ws-latency-monitor  ·  Binance · Coinbase · Poly · Mexico  ║"
             .cyan()
             .bold()
     );
     println!(
         "{}",
-        "╚══════════════════════════════════════════════════════════╝".cyan()
+        "╚══════════════════════════════════════════════════════════════════╝".cyan()
     );
     println!(
         "  Interval : {}ms  |  Window : {} samples  |  Report : {}s  |  Timeout : {}ms\n",
